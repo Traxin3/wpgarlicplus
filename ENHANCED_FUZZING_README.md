@@ -32,7 +32,14 @@ This enhanced version of wpgarlic implements AFL++-like feedback-guided fuzzing 
 
 1. **Install Dependencies**:
    ```bash
+   # For minimal installation (recommended)
+   pip install -r requirements-minimal.txt
+   
+   # For full installation with dev tools
    pip install -r requirements.txt
+   
+   # For development
+   pip install -r requirements-dev.txt
    ```
 
 2. **Setup Docker Environment**:

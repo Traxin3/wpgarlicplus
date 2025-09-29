@@ -518,6 +518,7 @@ def main():
         
         # Validate configuration
         manager = ConfigurationManager()
+        manager.config = config  # Set the config before validation
         issues = manager.validate_config()
         if issues:
             console.print("[red]Configuration validation failed:[/red]")
