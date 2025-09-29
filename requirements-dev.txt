@@ -1,0 +1,21 @@
+# Development requirements for enhanced wpgarlic
+# Install with: pip install -r requirements-dev.txt
+
+# Include minimal requirements
+-r requirements-minimal.txt
+
+# Development tools
+black>=24.4.0
+flake8>=7.0.0
+isort>=5.13.0
+mypy>=1.8.0
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Additional development dependencies
+pre-commit>=3.6.0
+tox>=4.11.0
+
+# Documentation
+mkdocs>=1.5.0
+mkdocs-material>=9.4.0
