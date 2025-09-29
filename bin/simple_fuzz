@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+"""
+Simplified fuzzing script that bypasses configuration validation issues.
+"""
+
+import sys
+import os
+
+# Add the parent directory to the path so we can import our modules
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from rich.console import Console
+from fuzzing_config import create_default_config, FuzzingMode
+from enhanced_fuzzer import EnhancedFuzzer
+
+def main():
+    console = Console()
+    
+    if len(sys.argv) < 3:
+        console.print("[red]Usage: python bin/simple_fuzz <plugin-slug> [mode] [version][/red]")
+        console.print("[yellow]Example: python bin/simple_fuzz page-builder-add balanced[/yellow]")
+        return
+    
+    plugin_slug = sys.argv[1]
+    mode = sys.argv[2] if len(sys.argv) > 2 else "balanced"
+    version = sys.argv[3] if len(sys.argv) > 3 else None
+    
+    console.print(f"[blue]Starting fuzzing for plugin: {plugin_slug}[/blue]")
+    console.print(f"[blue]Mode: {mode}[/blue]")
+    if version:
+        console.print(f"[blue]Version: {version}[/blue]")
+    
+    try:
+        # Create configuration
+        fuzzing_mode = FuzzingMode(mode.lower())
+        config = create_default_config(fuzzing_mode)
+        
+        # Set the plugin details
+        config.wordpress.target_slug = plugin_slug
+        config.wordpress.target_type = "plugin"
+        if version:
+            config.wordpress.target_version = version
+        
+        # Set output directory
+        config.output.output_directory = f"fuzzing_results_{plugin_slug}"
+        
+        console.print(f"[green]Configuration created successfully[/green]")
+        
+        # Create and run fuzzer
+        fuzzer = EnhancedFuzzer(config)
+        fuzzer.run_fuzzing_session(plugin_slug, version)
+        
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        import traceback
+        traceback.print_exc()
+
+if __name__ == "__main__":
+    main()

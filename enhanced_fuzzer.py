@@ -524,7 +524,8 @@ def main():
             console.print("[red]Configuration validation failed:[/red]")
             for issue in issues:
                 console.print(f"  - {issue}")
-            return
+            # Don't return, just warn and continue
+            console.print("[yellow]Continuing with warnings...[/yellow]")
         
         # Create and run fuzzer
         fuzzer = EnhancedFuzzer(config)
