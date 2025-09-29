@@ -10,11 +10,21 @@ from zipfile import ZipFile
 from nonces_storage import get_valid_nonces_for_plugin
 
 
+def _get_docker_compose_cmd():
+    """Get the correct docker compose command (v1 or v2)."""
+    try:
+        # Try docker compose v2 first
+        subprocess.check_output(["docker", "compose", "version"], stderr=subprocess.DEVNULL)
+        return ["docker", "compose"]
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        # Fallback to docker-compose v1
+        return ["docker-compose"]
+
+
 def run_in_container(cmd: typing.List[str]) -> None:
     subprocess.call(
-        [
-            "docker",
-            "compose",
+        _get_docker_compose_cmd()
+        + [
             "exec",
             "-T",
             "wordpress1",
@@ -57,9 +67,8 @@ def copy_nonces_into_container(plugin_name: str) -> None:
 
 def run_in_container_and_get_output(cmd: typing.List[str]) -> bytes:
     return subprocess.check_output(
-        [
-            "docker",
-            "compose",
+        _get_docker_compose_cmd()
+        + [
             "exec",
             "-T",
             "wordpress1",
@@ -165,13 +174,7 @@ def patch_plugins_themes(reverse: bool = False) -> None:
 
 def get_container_id() -> bytes:
     return subprocess.check_output(
-        [
-            "docker",
-            "compose",
-            "ps",
-            "-q",
-            "wordpress1",
-        ]
+        _get_docker_compose_cmd() + ["ps", "-q", "wordpress1"]
     ).strip()
 
 
@@ -201,18 +204,14 @@ def visit_admin_homepage() -> None:
 
 
 def reinitialize_containers():
+    docker_compose = _get_docker_compose_cmd()
+    
     subprocess.call(
-        [
-            "docker",
-            "compose",
-            "stop",
-        ],
+        docker_compose + ["stop"],
         stderr=subprocess.DEVNULL,
     )
     subprocess.call(
-        [
-            "docker",
-            "compose",
+        docker_compose + [
             "rm",
             "-f",
             "-v",
@@ -222,19 +221,10 @@ def reinitialize_containers():
         stderr=subprocess.DEVNULL,
     )
     subprocess.call(
-        [
-            "docker",
-            "compose",
-            "build",
-        ]
+        docker_compose + ["build"]
     )
     subprocess.call(
-        [
-            "docker",
-            "compose",
-            "up",
-            "-d",
-        ]
+        docker_compose + ["up", "-d"]
     )
     run_in_container(["/wait-for-it/wait-for-it.sh", "-h", "db1", "-p", "3306", "-t", "0"])
     time.sleep(2)
