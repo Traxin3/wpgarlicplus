@@ -50,7 +50,8 @@ class FuzzingConsole:
     
     def __init__(self, feedback_engine: FeedbackEngine):
         self.feedback_engine = feedback_engine
-        self.console = Console()
+        # Configure console for Windows compatibility
+        self.console = Console(force_terminal=True, legacy_windows=False)
         self.start_time = time.time()
         
         # UI state
@@ -688,7 +689,7 @@ class FuzzingConsole:
         
         severity_color = {
             CrashSeverity.LOW: "yellow",
-            CrashSeverity.MEDIUM: "orange1",
+            CrashSeverity.MEDIUM: "orange1", 
             CrashSeverity.HIGH: "red1",
             CrashSeverity.CRITICAL: "bright_red"
         }.get(severity, "white")
@@ -745,27 +746,27 @@ class FuzzingConsole:
     def print_error(self, message: str):
         """Print an error message with enhanced formatting."""
         timestamp = datetime.now().strftime("%H:%M:%S")
-        self.console.print(f"[dim]{timestamp}[/dim] [red]❌ Error:[/red] {message}")
+        self.console.print(f"[dim]{timestamp}[/dim] [red]Error:[/red] {message}")
     
     def print_warning(self, message: str):
         """Print a warning message with enhanced formatting."""
         timestamp = datetime.now().strftime("%H:%M:%S")
-        self.console.print(f"[dim]{timestamp}[/dim] [yellow]⚠️ Warning:[/yellow] {message}")
+        self.console.print(f"[dim]{timestamp}[/dim] [yellow]Warning:[/yellow] {message}")
     
     def print_success(self, message: str):
         """Print a success message with enhanced formatting."""
         timestamp = datetime.now().strftime("%H:%M:%S")
-        self.console.print(f"[dim]{timestamp}[/dim] [green]✅ Success:[/green] {message}")
+        self.console.print(f"[dim]{timestamp}[/dim] [green]Success:[/green] {message}")
     
     def print_info(self, message: str):
         """Print an info message with enhanced formatting."""
         timestamp = datetime.now().strftime("%H:%M:%S")
-        self.console.print(f"[dim]{timestamp}[/dim] [blue]ℹ️ Info:[/blue] {message}")
+        self.console.print(f"[dim]{timestamp}[/dim] [blue]Info:[/blue] {message}")
     
     def print_crash(self, message: str):
         """Print a crash message with enhanced formatting."""
         timestamp = datetime.now().strftime("%H:%M:%S")
-        self.console.print(f"[dim]{timestamp}[/dim] [red]💥 Crash:[/red] {message}")
+        self.console.print(f"[dim]{timestamp}[/dim] [red]Crash:[/red] {message}")
     
     def create_progress_display(self, current: int, total: int, description: str = "") -> str:
         """Create a visual progress bar string."""

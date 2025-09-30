@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+"""
+Smart Setup CLI for wpgarlic fuzzing system.
+Handles first-time initialization and subsequent runs with intelligent caching.
+"""
+
+import sys
+import os
+import argparse
+from pathlib import Path
+
+# Add the parent directory to the path so we can import our modules
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from setup_manager import run_smart_setup, SmartSetupManager
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich import box
+
+
+def show_setup_stats():
+    """Show setup statistics."""
+    console = Console()
+    manager = SmartSetupManager()
+    stats = manager.get_setup_stats()
+    
+    if stats["total_setups"] == 0:
+        console.print("[yellow]No setup history available[/yellow]")
+        return
+    
+    table = Table(title="📊 Setup Statistics", box=box.ROUNDED)
+    table.add_column("Metric", style="cyan", width=20)
+    table.add_column("Value", style="green", width=15)
+    
+    table.add_row("Total Setups", f"{stats['total_setups']:,}")
+    table.add_row("Successful Setups", f"{stats['successful_setups']:,}")
+    table.add_row("Success Rate", f"{stats['success_rate']:.1f}%")
+    table.add_row("Average Duration", f"{stats['average_duration']:.1f}s")
+    table.add_row("Cached Plugins", f"{stats['cached_plugins']:,}")
+    
+    console.print(table)
+
+
+def main():
+    """Main CLI entry point."""
+    parser = argparse.ArgumentParser(
+        description="Smart Setup Manager for wpgarlic fuzzing system",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s my-plugin                    # Setup with latest version
+  %(prog)s my-plugin --version 1.2.3   # Setup with specific version
+  %(prog)s --stats                     # Show setup statistics
+  %(prog)s --clean                     # Clean up old cache
+        """
+    )
+    
+    parser.add_argument(
+        "plugin_slug",
+        nargs="?",
+        help="WordPress plugin slug to setup"
+    )
+    
+    parser.add_argument(
+        "--version", "-v",
+        help="Plugin version (default: latest)"
+    )
+    
+    parser.add_argument(
+        "--stats",
+        action="store_true",
+        help="Show setup statistics"
+    )
+    
+    parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="Clean up old cache entries"
+    )
+    
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force fresh setup even if cached"
+    )
+    
+    args = parser.parse_args()
+    
+    console = Console()
+    
+    if args.stats:
+        show_setup_stats()
+        return
+    
+    if args.clean:
+        manager = SmartSetupManager()
+        manager.cleanup_old_cache()
+        console.print("[green]✅ Cache cleanup completed[/green]")
+        return
+    
+    if not args.plugin_slug:
+        parser.print_help()
+        return
+    
+    # Run smart setup
+    try:
+        success = run_smart_setup(args.plugin_slug, args.version)
+        
+        if success:
+            console.print(f"\n[green]✅ Smart setup completed successfully![/green]")
+            console.print(f"[blue]You can now run the fuzzer with:[/blue]")
+            console.print(f"[cyan]  python bin/enhanced_fuzz fuzz {args.plugin_slug}[/cyan]")
+        else:
+            console.print(f"\n[red]❌ Smart setup failed[/red]")
+            sys.exit(1)
+            
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Setup interrupted by user[/yellow]")
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"\n[red]Setup failed: {e}[/red]")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

@@ -33,6 +33,7 @@ from fuzzer_container import (
     fuzz_pages, fuzz_shortcodes, find_payloads_in_files,
     find_payloads_in_pages, find_payloads_in_admin
 )
+from setup_manager import SmartSetupManager, run_smart_setup
 import crash_detector
 import filtering
 
@@ -42,7 +43,8 @@ class EnhancedFuzzer:
     
     def __init__(self, config: FuzzingConfiguration = None):
         self.config = config or create_default_config()
-        self.console = Console()
+        # Configure console for Windows compatibility
+        self.console = Console(force_terminal=True, legacy_windows=False)
         self.fuzzing_console = None
         self.feedback_engine = None
         self.coverage_tracker = None
@@ -87,45 +89,34 @@ class EnhancedFuzzer:
         # Initialize Rich console
         self.fuzzing_console = FuzzingConsole(self.feedback_engine)
         
-        self.console.print("[green]✅ Enhanced fuzzing components initialized[/green]")
+        self.console.print("[green]Enhanced fuzzing components initialized[/green]")
     
     def setup_wordpress_environment(self, plugin_slug: str, version: str = None):
-        """Setup WordPress environment for fuzzing."""
-        self.fuzzing_console.print_info(f"Setting up WordPress environment for plugin: {plugin_slug}")
+        """Setup WordPress environment using smart setup manager."""
+        self.fuzzing_console.print_info(f"Starting smart setup for plugin: {plugin_slug}")
         
         try:
-            # Show enhanced startup
-            self.fuzzing_console.show_enhanced_startup()
+            # Use smart setup manager
+            setup_manager = SmartSetupManager()
             
-            # Reinitialize containers
-            self.fuzzing_console.print_status("Reinitializing containers...", "blue")
-            reinitialize_containers()
+            # Run smart setup process
+            success = run_smart_setup(plugin_slug, version)
             
-            # Install and activate plugin
-            install_plugin_from_slug(plugin_slug, version)
-            activate_plugin(plugin_slug)
+            if not success:
+                raise Exception("Smart setup failed")
+            
+            # Additional setup for fuzzing-specific components
+            self.fuzzing_console.print_status("Initializing fuzzing components...", "blue")
             
             # Visit admin homepage to trigger initialization
             for i in range(3):
                 visit_admin_homepage()
             
-            # Patch WordPress and plugins for fuzzing
-            patch_wordpress()
-            patch_plugins_themes()
-            
-            # Disconnect network for isolation
-            container_id = get_container_id()
-            exit_code = disconnect_network(container_id)
-            if exit_code != 0:
-                raise Exception("Failed to disconnect network")
-            
-            disconnect_dns()
-            
             self.current_plugin = plugin_slug
-            self.console.print(f"[green]WordPress environment ready for {plugin_slug}[/green]")
+            self.fuzzing_console.print_success(f"WordPress environment ready for {plugin_slug}")
             
         except Exception as e:
-            self.console.print(f"[red]Failed to setup WordPress environment: {e}[/red]")
+            self.fuzzing_console.print_error(f"Failed to setup WordPress environment: {e}")
             raise
     
     def execute_test_case(self, test_case: TestCase) -> Dict[str, Any]:
