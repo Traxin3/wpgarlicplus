@@ -270,8 +270,13 @@ class ConfigurationManager:
             config.coverage.track_branches = True
             config.coverage.track_functions = True
             config.crash.analyze_stack_traces = True
-            config.mutation.splice_probability = 0.2
-            config.mutation.dictionary_probability = 0.3
+            # Adjust probabilities to sum to 1.0
+            config.mutation.splice_probability = 0.15
+            config.mutation.dictionary_probability = 0.25
+            config.mutation.bit_flip_probability = 0.2
+            config.mutation.arithmetic_probability = 0.15
+            config.mutation.havoc_probability = 0.2
+            config.mutation.interesting_probability = 0.05
         
         return config
     

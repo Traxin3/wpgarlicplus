@@ -87,14 +87,18 @@ class EnhancedFuzzer:
         # Initialize Rich console
         self.fuzzing_console = FuzzingConsole(self.feedback_engine)
         
-        self.console.print("[green]Enhanced fuzzing components initialized[/green]")
+        self.console.print("[green]✅ Enhanced fuzzing components initialized[/green]")
     
     def setup_wordpress_environment(self, plugin_slug: str, version: str = None):
         """Setup WordPress environment for fuzzing."""
-        self.console.print(f"[blue]Setting up WordPress environment for plugin: {plugin_slug}[/blue]")
+        self.fuzzing_console.print_info(f"Setting up WordPress environment for plugin: {plugin_slug}")
         
         try:
+            # Show enhanced startup
+            self.fuzzing_console.show_enhanced_startup()
+            
             # Reinitialize containers
+            self.fuzzing_console.print_status("Reinitializing containers...", "blue")
             reinitialize_containers()
             
             # Install and activate plugin

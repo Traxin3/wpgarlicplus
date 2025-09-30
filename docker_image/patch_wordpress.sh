@@ -83,5 +83,7 @@ else
         /var/www/html/wp-admin/includes/class-plugin-upgrader.php
     
     # Include coverage instrumentation
-    echo "<?php include('/fuzzer/coverage_instrumentation.php'); ?>" >> /var/www/html/wp-config.php
+    # Remove the closing ?> if it exists and add our include
+    sed -i 's/?>$//' /var/www/html/wp-config.php
+    echo "include('/fuzzer/coverage_instrumentation.php');" >> /var/www/html/wp-config.php
 fi
