@@ -88,9 +88,8 @@ class EnhancedFuzzer:
                 output_dir=os.path.join(self.config.output.output_directory, "coverage")
             )
         
-        # Initialize Rich console and enhanced UI
+        # Initialize Rich console
         self.fuzzing_console = FuzzingConsole(self.feedback_engine)
-        self.ui_manager = EnhancedUIManager()
         
         self.console.print("[green]Enhanced fuzzing components initialized[/green]")
     
@@ -378,23 +377,10 @@ class EnhancedFuzzer:
             
             self.console.print(f"[green]Added {len(initial_test_cases)} initial test cases[/green]")
             
-            # Start enhanced UI in a separate thread
-            ui_thread = threading.Thread(
-                target=self.ui_manager.start_live_ui,
-                args=(plugin_slug, self.config.performance.max_executions),
-                daemon=True
-            )
-            ui_thread.start()
-            
-            # Give UI time to start
-            time.sleep(1)
-            
-            # Start the fuzzing loop
+            # Start the fuzzing loop (without threaded UI for now)
             self.is_running = True
+            self.start_time = time.time()
             self._fuzzing_loop()
-            
-            # Stop UI
-            self.ui_manager.stop_live_ui()
             
         except Exception as e:
             self.console.print(f"[red]Fuzzing session failed: {e}[/red]")
@@ -403,9 +389,11 @@ class EnhancedFuzzer:
             self._cleanup_session()
     
     def _fuzzing_loop(self):
-        """Main fuzzing loop with enhanced UI updates."""
+        """Main fuzzing loop with simple progress updates."""
         last_stats_update = time.time()
-        last_ui_update = time.time()
+        last_progress_update = time.time()
+        
+        self.console.print("[blue]Starting fuzzing loop...[/blue]")
         
         while (not self.should_stop and 
                self.total_executions < self.config.performance.max_executions and
@@ -435,31 +423,19 @@ class EnhancedFuzzer:
                     new_coverage = self.coverage_tracker.get_new_coverage(set())
                     if new_coverage:
                         self.coverage_growth += len(new_coverage)
-                        # Update UI with new coverage
-                        self.ui_manager.update_coverage(new_coverage)
             
             # Check for crashes
             if result.get("crash"):
-                self.ui_manager.update_crash(result["crash"])
+                self.console.print(f"[red]Crash detected: {result['crash']}[/red]")
             
-            # Update UI with current test information
+            # Show progress periodically
             current_time = time.time()
-            if current_time - last_ui_update >= 0.1:  # Update UI every 100ms
-                endpoint = result.get("endpoint", "Unknown")
-                strategy = getattr(test_case, 'mutation_strategy', 'Initial')
-                fitness = getattr(test_case, 'fitness_score', 0.0)
+            if current_time - last_progress_update >= 5.0:  # Update every 5 seconds
+                progress = (self.total_executions / self.config.performance.max_executions) * 100
+                rate = self.total_executions / (current_time - self.start_time) if self.start_time else 0
                 
-                self.ui_manager.update_current_test(
-                    endpoint,
-                    str(test_case)[:50] + "..." if len(str(test_case)) > 50 else str(test_case),
-                    strategy,
-                    fitness
-                )
-                
-                # Update execution count
-                self.ui_manager.update_executions(self.total_executions)
-                
-                last_ui_update = current_time
+                self.console.print(f"[green]Progress: {progress:.1f}% | Executions: {self.total_executions:,} | Rate: {rate:.1f}/s | Coverage: {self.coverage_growth}[/green]")
+                last_progress_update = current_time
             
             # Update statistics periodically
             if current_time - last_stats_update >= self.config.performance.stats_update_interval:
@@ -474,7 +450,9 @@ class EnhancedFuzzer:
             time.sleep(0.01)
         
         # Show final report
-        self.ui_manager.show_final_summary()
+        self.console.print(f"[green]Fuzzing session completed![/green]")
+        self.console.print(f"[cyan]Total executions: {self.total_executions:,}[/cyan]")
+        self.console.print(f"[cyan]Coverage growth: {self.coverage_growth}[/cyan]")
     
     def _generate_mutations(self):
         """Generate new test cases through mutation."""
