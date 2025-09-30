@@ -83,7 +83,18 @@ else
         /var/www/html/wp-admin/includes/class-plugin-upgrader.php
     
     # Include coverage instrumentation
-    # Remove the closing ?> if it exists and add our include
-    sed -i 's/?>$//' /var/www/html/wp-config.php
+    # Remove any existing coverage instrumentation first
+    sed -i '/include.*coverage_instrumentation.php/d' /var/www/html/wp-config.php
+    
+    # Remove the closing ?> if it exists and add our include properly
+    # Handle both ?> and ?> with whitespace
+    sed -i 's/\s*?>\s*$//' /var/www/html/wp-config.php
+    
+    # Add a newline if the file doesn't end with one
+    if [ -n "$(tail -c1 /var/www/html/wp-config.php)" ]; then
+        echo "" >> /var/www/html/wp-config.php
+    fi
+    
+    # Add the coverage instrumentation
     echo "include('/fuzzer/coverage_instrumentation.php');" >> /var/www/html/wp-config.php
 fi
