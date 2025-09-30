@@ -82,5 +82,6 @@ COPY wordpress_patches /fuzzer/wordpress_patches
 
 COPY php.ini /usr/local/lib/php.ini
 COPY rest.php /fuzzer/rest.php
+COPY coverage_instrumentation.php /fuzzer/coverage_instrumentation.php
 
 RUN mkdir /opcache

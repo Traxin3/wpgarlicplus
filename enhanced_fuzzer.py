@@ -8,6 +8,7 @@ import os
 import random
 import signal
 import sys
+import threading
 import time
 import traceback
 from pathlib import Path
@@ -34,6 +35,7 @@ from fuzzer_container import (
     find_payloads_in_pages, find_payloads_in_admin
 )
 from setup_manager import SmartSetupManager, run_smart_setup
+from enhanced_ui_manager import EnhancedUIManager
 import crash_detector
 import filtering
 
@@ -86,8 +88,9 @@ class EnhancedFuzzer:
                 output_dir=os.path.join(self.config.output.output_directory, "coverage")
             )
         
-        # Initialize Rich console
+        # Initialize Rich console and enhanced UI
         self.fuzzing_console = FuzzingConsole(self.feedback_engine)
+        self.ui_manager = EnhancedUIManager()
         
         self.console.print("[green]Enhanced fuzzing components initialized[/green]")
     
@@ -351,9 +354,6 @@ class EnhancedFuzzer:
             # Setup environment
             self.setup_wordpress_environment(plugin_slug, version)
             
-            # Start fuzzing session
-            self.fuzzing_console.start_fuzzing_session(plugin_slug)
-            
             # Generate initial test cases
             initial_test_cases = self.generate_initial_test_cases()
             
@@ -367,9 +367,23 @@ class EnhancedFuzzer:
             
             self.console.print(f"[green]Added {len(initial_test_cases)} initial test cases[/green]")
             
+            # Start enhanced UI in a separate thread
+            ui_thread = threading.Thread(
+                target=self.ui_manager.start_live_ui,
+                args=(plugin_slug, self.config.performance.max_executions),
+                daemon=True
+            )
+            ui_thread.start()
+            
+            # Give UI time to start
+            time.sleep(1)
+            
             # Start the fuzzing loop
             self.is_running = True
             self._fuzzing_loop()
+            
+            # Stop UI
+            self.ui_manager.stop_live_ui()
             
         except Exception as e:
             self.console.print(f"[red]Fuzzing session failed: {e}[/red]")
@@ -378,8 +392,9 @@ class EnhancedFuzzer:
             self._cleanup_session()
     
     def _fuzzing_loop(self):
-        """Main fuzzing loop."""
+        """Main fuzzing loop with enhanced UI updates."""
         last_stats_update = time.time()
+        last_ui_update = time.time()
         
         while (not self.should_stop and 
                self.total_executions < self.config.performance.max_executions and
@@ -409,9 +424,33 @@ class EnhancedFuzzer:
                     new_coverage = self.coverage_tracker.get_new_coverage(set())
                     if new_coverage:
                         self.coverage_growth += len(new_coverage)
+                        # Update UI with new coverage
+                        self.ui_manager.update_coverage(new_coverage)
+            
+            # Check for crashes
+            if result.get("crash"):
+                self.ui_manager.update_crash(result["crash"])
+            
+            # Update UI with current test information
+            current_time = time.time()
+            if current_time - last_ui_update >= 0.1:  # Update UI every 100ms
+                endpoint = result.get("endpoint", "Unknown")
+                strategy = getattr(test_case, 'mutation_strategy', 'Initial')
+                fitness = getattr(test_case, 'fitness_score', 0.0)
+                
+                self.ui_manager.update_current_test(
+                    endpoint,
+                    str(test_case)[:50] + "..." if len(str(test_case)) > 50 else str(test_case),
+                    strategy,
+                    fitness
+                )
+                
+                # Update execution count
+                self.ui_manager.update_executions(self.total_executions)
+                
+                last_ui_update = current_time
             
             # Update statistics periodically
-            current_time = time.time()
             if current_time - last_stats_update >= self.config.performance.stats_update_interval:
                 self.feedback_engine.update_stats()
                 last_stats_update = current_time
@@ -424,7 +463,7 @@ class EnhancedFuzzer:
             time.sleep(0.01)
         
         # Show final report
-        self.fuzzing_console.show_final_report()
+        self.ui_manager.show_final_summary()
     
     def _generate_mutations(self):
         """Generate new test cases through mutation."""
