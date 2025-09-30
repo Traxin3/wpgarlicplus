@@ -1,0 +1,13 @@
+{
+  "test_cases": {},
+  "coverage_map": {},
+  "crash_signatures": [],
+  "stats": {
+    "total_executions": 0,
+    "total_coverage": 0,
+    "crashes_found": 0,
+    "unique_crashes": 0,
+    "start_time": 1759225793.82642,
+    "last_crash_time": 0.0
+  }
+}

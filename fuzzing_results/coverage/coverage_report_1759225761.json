@@ -1,0 +1,22 @@
+{
+  "summary": {
+    "overall_percentage": 0,
+    "total_executable_lines": 0,
+    "total_lines_hit": 0,
+    "unique_paths": 0,
+    "total_executions": 0,
+    "top_files": [],
+    "average_execution_time": 0,
+    "average_memory_usage": 0
+  },
+  "file_coverage": {},
+  "coverage_points": {},
+  "path_coverage": [],
+  "execution_stats": {
+    "total_executions": 0,
+    "average_execution_time": 0,
+    "average_memory_usage": 0,
+    "execution_times": [],
+    "memory_usage": []
+  }
+}

@@ -95,31 +95,42 @@ class EnhancedFuzzer:
         self.console.print("[green]Enhanced fuzzing components initialized[/green]")
     
     def setup_wordpress_environment(self, plugin_slug: str, version: str = None):
-        """Setup WordPress environment using smart setup manager."""
-        self.fuzzing_console.print_info(f"Starting smart setup for plugin: {plugin_slug}")
+        """Setup WordPress environment for fuzzing."""
+        self.fuzzing_console.print_info(f"Setting up WordPress environment for plugin: {plugin_slug}")
         
         try:
-            # Use smart setup manager
-            setup_manager = SmartSetupManager()
+            # Show basic startup message
+            self.console.print("[blue]Starting WordPress environment setup...[/blue]")
             
-            # Run smart setup process
-            success = run_smart_setup(plugin_slug, version)
+            # Reinitialize containers
+            self.fuzzing_console.print_status("Reinitializing containers...", "blue")
+            reinitialize_containers()
             
-            if not success:
-                raise Exception("Smart setup failed")
-            
-            # Additional setup for fuzzing-specific components
-            self.fuzzing_console.print_status("Initializing fuzzing components...", "blue")
+            # Install and activate plugin
+            install_plugin_from_slug(plugin_slug, version)
+            activate_plugin(plugin_slug)
             
             # Visit admin homepage to trigger initialization
             for i in range(3):
                 visit_admin_homepage()
             
+            # Patch WordPress and plugins for fuzzing
+            patch_wordpress()
+            patch_plugins_themes()
+            
+            # Disconnect network for isolation
+            container_id = get_container_id()
+            exit_code = disconnect_network(container_id)
+            if exit_code != 0:
+                raise Exception("Failed to disconnect network")
+            
+            disconnect_dns()
+            
             self.current_plugin = plugin_slug
-            self.fuzzing_console.print_success(f"WordPress environment ready for {plugin_slug}")
+            self.console.print(f"[green]WordPress environment ready for {plugin_slug}[/green]")
             
         except Exception as e:
-            self.fuzzing_console.print_error(f"Failed to setup WordPress environment: {e}")
+            self.console.print(f"[red]Failed to setup WordPress environment: {e}[/red]")
             raise
     
     def execute_test_case(self, test_case: TestCase) -> Dict[str, Any]:
